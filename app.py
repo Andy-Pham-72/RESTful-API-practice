@@ -12,11 +12,11 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 # helps to define the path to the database file
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'planets.db')
 app.config['JWT_SECRET_KEY'] = 'super-secret' # change this IRL
-# config for mailtrap access
+# config for mailtrap access via environment variable
 app.config['MAIL_SERVER'] = os.environ['MAIL_SERVER']
 app.config['MAIL_PORT'] = os.environ['MAIL_PORT']
 app.config['MAIL_USERNAME'] = os.environ['MAIL_USERNAME']
-app.config['MAIL_PASSWORD'] = os.environ['MAIL_PASSWORD']
+app.config['MAIL_PASSWORD'] = os.environ['MAIL_PASSWORD'] 
 
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
@@ -146,6 +146,7 @@ def login():
         password = request.form['password']
     test = User.query.filter_by(email=email, password=password).first()
     if test:
+        # generate access token
         access_token = create_access_token(identity=email)
         return jsonify(message='Login succeeded!', access_token=access_token)
     else:
