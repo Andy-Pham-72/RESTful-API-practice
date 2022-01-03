@@ -3,17 +3,26 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from sqlalchemy import Column, Integer, String, Float
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token
+from flask_mail import Mail, Message
 import os
+
 
 app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
 # helps to define the path to the database file
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'planets.db')
 app.config['JWT_SECRET_KEY'] = 'super-secret' # change this IRL
+# config for mailtrap access
+app.config['MAIL_SERVER'] = os.environ['MAIL_SERVER']
+app.config['MAIL_PORT'] = os.environ['MAIL_PORT']
+app.config['MAIL_USERNAME'] = os.environ['MAIL_USERNAME']
+app.config['MAIL_PASSWORD'] = os.environ['MAIL_PASSWORD']
 
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 jwt = JWTManager(app)
+mail= Mail(app)
+
 
 @app.cli.command("dc_create")
 def db_create():
@@ -141,6 +150,19 @@ def login():
         return jsonify(message='Login succeeded!', access_token=access_token)
     else:
         return jsonify(message="Wrong email or password"), 401
+
+
+@app.route('/retrieve_password/<string:email>', methods=['GET'])
+def retrieve_password(email: str):
+    user = User.query.filter_by(email=email).first()
+    if user:
+        msg = Message('Your planetary API password is: ' + user.password,
+                      sender="admin@planetary.com",
+                      recipients=[email])
+        mail.send(msg)
+        return jsonify(message='Password sent to ' + email)
+    else:
+        return jsonify(message="That mail doesn't exist!"), 401
 
 
 # database models
